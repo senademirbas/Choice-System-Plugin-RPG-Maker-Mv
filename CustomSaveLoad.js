@@ -516,6 +516,7 @@
         this._sortedSavefileIds = []; // Timestamp'e göre sıralanmış save ID'leri
         this._messageSprite = null;
         this._messageTimer = 0;
+        this._saveSuccessTimer = null;
     };
 
     Scene_CustomSaveLoad.prototype.prepare = function (mode) {
@@ -766,7 +767,7 @@
         this.showSaveSuccessMessage();
 
         // 1.5 saniye sonra menüyü kapat
-        setTimeout(() => {
+        this._saveSuccessTimer = setTimeout(() => {
             $gameTemp.justPoppedFromMenu = true;
             SceneManager.pop();
         }, 1500);
@@ -905,6 +906,11 @@
     // Scene kaldırıldığında tüm kaynakları temizle
     Scene_CustomSaveLoad.prototype.terminate = function () {
         Scene_MenuBase.prototype.terminate.call(this);
+
+        if (this._saveSuccessTimer) {
+            clearTimeout(this._saveSuccessTimer);
+            this._saveSuccessTimer = null;
+        }
 
         // Slot'ları temizle
         if (this._slots) {
