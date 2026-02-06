@@ -18,80 +18,118 @@
  * 
  * v19 Değişiklikleri:
  * - FEATURE: Save file'lar timestamp'e göre sıralanıyor (en son save en üstte)
- * - FEATURE: "Saving..." göstergesi ve "Game Saved!" başarı mesajı eklendi
+ * - FEATURE: Save file'lar timestamp'e göre sıralanıyor (en son save en üstte)
  * - FEATURE: Hata yönetimi ve corrupted save file kontrolü
  * - FEATURE: Detaylı error message gösterme sistemi
  * - OPTIMIZATION: Try-catch blokları ile güvenli işlem yapma
- * - UX: Profesyonel görsel geri bildirim sistemi
  */
 
 (function () {
+    'use strict';
 
-    // --- SABITLER ---
-    const SAVE_UNLOCK_SWITCH_ID = 48;
-    const MAX_SAVE_SLOTS = 3;
-    const SLOT_SPACING = 200;
-    const SLOT_X = 330;
-    const SLOT_Y_START = 30;
-    const PAUSE_BUTTON_X = 100;
-    const PAUSE_BUTTON_NORMAL_SPACING = 110;
-    const PAUSE_BUTTON_LARGE_SPACING = 180;
-    const PAUSE_Y_OFFSET = 50;
-
-    // İmaj yolları
-    const Images = {
-        pauseBase: 'Pause Screen/Base',
-        saveLoadBase: 'Save-Load/SAVE_LOAD_Base',
-        saveLoadLine: 'Save-Load/SAVE_LOAD_Line',
-        saveLoadRooms: {
-            4: 'Save-Load/SAVE_LOAD_04_Lydias_Room',
-            5: 'Save-Load/SAVE_LOAD_05_Hallway',
-            6: 'Save-Load/SAVE_LOAD_06_Enterance',
-            7: 'Save-Load/SAVE_LOAD_07_Living Room',
-            9: 'Save-Load/SAVE_LOAD_08_Dream_Two',
-            10: 'Save-Load/SAVE_LOAD_09_Dream_Three'
-        }
+    /**
+     * @constant
+     * @description Configuration and Asset definitions for the Custom Menu System.
+     */
+    const Config = {
+        Switches: {
+            SaveUnlock: 48,
+            AlbumUnlock: 50 // Default for test, can be overridden by AlbumConfig
+        },
+        Layout: {
+            MaxSlots: 3,
+            SlotSpacing: 200,
+            SlotX: 330,
+            SlotYStart: 30,
+            PauseButtonX: 100,
+            PauseButtonNormalSpacing: 110,
+            PauseButtonLargeSpacing: 180,
+            PauseYOffset: 50
+        },
+        Images: {
+            PauseBase: 'Pause Screen/Base',
+            SaveLoadBase: 'Save-Load/SAVE_LOAD_Base',
+            SaveLoadLine: 'Save-Load/SAVE_LOAD_Line',
+            SaveLoadRooms: {
+                4: 'Save-Load/SAVE_LOAD_04_Lydias_Room',
+                5: 'Save-Load/SAVE_LOAD_05_Hallway',
+                6: 'Save-Load/SAVE_LOAD_06_Enterance',
+                7: 'Save-Load/SAVE_LOAD_07_Living Room',
+                9: 'Save-Load/SAVE_LOAD_08_Dream_Two',
+                10: 'Save-Load/SAVE_LOAD_09_Dream_Three'
+            }
+        },
+        // Album Content Configuration
+        Album: [
+            { file: 'Lydias Room Polaroid 1', switchId: 50 },
+            // Add new album items here
+        ]
     };
-
-    // Albüm Ayarları
-    const AlbumConfig = [
-        { file: 'Lydias Room Polaroid 1', switchId: 50 },
-        // Buraya virgül koyarak yenilerini ekleyebilirsin
-    ];
 
     // ----------------------------------------
 
-    // --- Sınıf Tanımlamaları ---
+    // --- Class Definitions ---
+
+    /**
+     * @class
+     * @extends Scene_MenuBase
+     * @classdesc Handles the Custom Save and Load menu logic and UI.
+     */
     function Scene_CustomSaveLoad() {
         this.initialize.apply(this, arguments);
     }
     Scene_CustomSaveLoad.prototype = Object.create(Scene_MenuBase.prototype);
     Scene_CustomSaveLoad.prototype.constructor = Scene_CustomSaveLoad;
 
+    /**
+     * @class
+     * @extends Sprite
+     * @classdesc Represents a single save slot in the UI.
+     */
     function SaveSlot(slotIndex, savefileId, mapId, exists) {
         this.initialize.apply(this, arguments);
     }
     SaveSlot.prototype = Object.create(Sprite.prototype);
     SaveSlot.prototype.constructor = SaveSlot;
 
+    /**
+     * @class
+     * @extends Scene_MenuBase
+     * @classdesc The main pause menu scene.
+     */
     function Scene_PauseMenu() {
         this.initialize.apply(this, arguments);
     }
     Scene_PauseMenu.prototype = Object.create(Scene_MenuBase.prototype);
     Scene_PauseMenu.prototype.constructor = Scene_PauseMenu;
 
+    /**
+     * @class
+     * @extends Sprite
+     * @classdesc A clickable button sprite for the pause menu.
+     */
     function Sprite_PauseButton() {
         this.initialize.apply(this, arguments);
     }
     Sprite_PauseButton.prototype = Object.create(Sprite.prototype);
     Sprite_PauseButton.prototype.constructor = Sprite_PauseButton;
 
+    /**
+     * @class
+     * @extends Scene_MenuBase
+     * @classdesc The photo album viewer scene.
+     */
     function Scene_Album() {
         this.initialize.apply(this, arguments);
     }
     Scene_Album.prototype = Object.create(Scene_MenuBase.prototype);
     Scene_Album.prototype.constructor = Scene_Album;
 
+    /**
+     * @class
+     * @extends Scene_MenuBase
+     * @classdesc A scene displayed when the save feature is locked.
+     */
     function Scene_LockedSave() {
         this.initialize.apply(this, arguments);
     }
@@ -115,7 +153,7 @@
     };
 
     Scene_PauseMenu.prototype.createBackground = function () {
-        this._backgroundSprite = new Sprite(ImageManager.loadPicture(Images.pauseBase));
+        this._backgroundSprite = new Sprite(ImageManager.loadPicture(Config.Images.PauseBase));
         this.addChild(this._backgroundSprite);
     };
 
@@ -127,24 +165,24 @@
             { img: 'Exit', handler: this.commandExit }
         ];
 
-        const baseY = ((Graphics.boxHeight - this.calculateTotalButtonHeight()) / 2) - PAUSE_Y_OFFSET;
+        const baseY = ((Graphics.boxHeight - this.calculateTotalButtonHeight()) / 2) - Config.Layout.PauseYOffset;
         let currentY = baseY;
 
         buttonInfo.forEach((info, i) => {
             const button = new Sprite_PauseButton(info.img);
-            button.x = PAUSE_BUTTON_X;
+            button.x = Config.Layout.PauseButtonX;
             button.y = currentY;
             button.setClickHandler(info.handler.bind(this));
             this._buttons.push(button);
             this.addChild(button);
 
             currentY += (info.handler === this.commandAlbum ?
-                PAUSE_BUTTON_LARGE_SPACING + 25 : PAUSE_BUTTON_NORMAL_SPACING);
+                Config.Layout.PauseButtonLargeSpacing + 25 : Config.Layout.PauseButtonNormalSpacing);
         });
     };
 
     Scene_PauseMenu.prototype.calculateTotalButtonHeight = function () {
-        return (PAUSE_BUTTON_NORMAL_SPACING * 2) + PAUSE_BUTTON_LARGE_SPACING;
+        return (Config.Layout.PauseButtonNormalSpacing * 2) + Config.Layout.PauseButtonLargeSpacing;
     };
 
     Scene_PauseMenu.prototype.update = function () {
@@ -229,7 +267,7 @@
             return;
         }
 
-        if (!$gameSwitches.value(SAVE_UNLOCK_SWITCH_ID)) {
+        if (!$gameSwitches.value(Config.Switches.SaveUnlock)) {
             SoundManager.playBuzzer();
             SceneManager.push(Scene_LockedSave);
             return;
@@ -347,7 +385,7 @@
     Scene_Album.prototype.initialize = function () {
         Scene_MenuBase.prototype.initialize.call(this);
         this._index = 0;
-        this._unlockedPhotos = AlbumConfig.filter(item =>
+        this._unlockedPhotos = Config.Album.filter(item =>
             item.switchId === 0 || $gameSwitches.value(item.switchId)
         );
         this._maxPhotos = this._unlockedPhotos.length;
@@ -486,7 +524,7 @@
             _DataManager_makeSaveLoad_Scene_Map_updateCallMenu.call(this);
             return;
         }
-        if (this.isMenuEnabled() && $gameSystem.isSaveEnabled()) {
+        if (this.isMenuEnabled()) {
             if (Input.isTriggered('menu') || TouchInput.isCancelled()) {
                 SceneManager.push(Scene_PauseMenu);
                 return;
@@ -516,7 +554,6 @@
         this._sortedSavefileIds = []; // Timestamp'e göre sıralanmış save ID'leri
         this._messageSprite = null;
         this._messageTimer = 0;
-        this._saveSuccessTimer = null;
     };
 
     Scene_CustomSaveLoad.prototype.prepare = function (mode) {
@@ -529,11 +566,7 @@
     };
 
     Scene_CustomSaveLoad.prototype.create = function () {
-        // Önceki açılıştan kalan sprites'ları tamamen temizle
-        while (this.children.length > 0) {
-            this.removeChild(this.children[0]);
-        }
-
+        // Scene initialization
         this._index = 0;
 
         // Mode kontrolü
@@ -560,7 +593,7 @@
         this._dimmerSprite.y = 0;
 
         // Create UI base background
-        this._uiBackgroundSprite = new Sprite(ImageManager.loadPicture(Images.saveLoadBase));
+        this._uiBackgroundSprite = new Sprite(ImageManager.loadPicture(Config.Images.SaveLoadBase));
         this._uiBackgroundSprite.x = 50;
         this._uiBackgroundSprite.y = 0;
 
@@ -576,7 +609,7 @@
         // Save file'ları timestamp'e göre sırala (en yeni en üstte)
         this._sortedSavefileIds = this.getSortedSaveFiles();
 
-        for (let i = 0; i < MAX_SAVE_SLOTS; i++) {
+        for (let i = 0; i < Config.Layout.MaxSlots; i++) {
             const savefileId = this._sortedSavefileIds[i] || (i + 1);
             const info = DataManager.loadSavefileInfo(savefileId);
             const mapId = (info && info.mapId) ? info.mapId : 0;
@@ -591,7 +624,7 @@
         const saveFiles = [];
 
         // Tüm save slot'larını tara
-        for (let i = 1; i <= MAX_SAVE_SLOTS; i++) {
+        for (let i = 1; i <= Config.Layout.MaxSlots; i++) {
             const info = DataManager.loadSavefileInfo(i);
             if (info) {
                 saveFiles.push({
@@ -608,7 +641,7 @@
         const sortedIds = saveFiles.map(file => file.id);
 
         // Boş slot'ları sonuna ekle
-        for (let i = 1; i <= MAX_SAVE_SLOTS; i++) {
+        for (let i = 1; i <= Config.Layout.MaxSlots; i++) {
             if (!sortedIds.includes(i)) {
                 sortedIds.push(i);
             }
@@ -620,6 +653,7 @@
     Scene_CustomSaveLoad.prototype.update = function () {
         Scene_MenuBase.prototype.update.call(this);
         this.updateMessageTimer();
+        this.updateMessageFadeIn();
         this.processInput();
         this.processTouch();
     };
@@ -698,24 +732,19 @@
     };
 
     Scene_CustomSaveLoad.prototype.processSave = function () {
-        this.showSavingIndicator();
+        try {
+            $gameSystem.onBeforeSave();
 
-        // Kısa bir delay ile save işlemini gerçekleştir (indicator görünsün diye)
-        setTimeout(() => {
-            try {
-                $gameSystem.onBeforeSave();
-
-                if (DataManager.saveGame(this._savefileId)) {
-                    SoundManager.playSave();
-                    this.onSaveSuccess();
-                } else {
-                    this.onSaveFailure();
-                }
-            } catch (error) {
-                console.error('Save Error:', error);
+            if (DataManager.saveGame(this._savefileId)) {
+                SoundManager.playSave();
+                this.onSaveSuccess();
+            } else {
                 this.onSaveFailure();
             }
-        }, 300);
+        } catch (error) {
+            console.error('Save Error:', error);
+            this.onSaveFailure();
+        }
     };
 
     Scene_CustomSaveLoad.prototype.processLoad = function () {
@@ -758,31 +787,36 @@
     };
 
     Scene_CustomSaveLoad.prototype.onSaveSuccess = function () {
-        this.hideMessage(); // "Saving..." mesajını gizle
+        this.hideMessage(); // "Saving..." mesajını gizle (if any remain)
 
         // Slot'ları yeniden sırala (en son save en üstte olacak)
         this.refreshAllSlots();
 
-        // "Game Saved!" mesajını göster
-        this.showSaveSuccessMessage();
-
-        // 1.5 saniye sonra menüyü kapat
-        this._saveSuccessTimer = setTimeout(() => {
-            $gameTemp.justPoppedFromMenu = true;
-            SceneManager.pop();
-        }, 1500);
+        $gameTemp.justPoppedFromMenu = true;
+        SceneManager.pop();
     };
 
     Scene_CustomSaveLoad.prototype.refreshAllSlots = function () {
-        // Tüm slot'ları temizle
-        this._slots.forEach(slot => {
-            if (slot && slot.parent) {
-                this.removeChild(slot);
-            }
-        });
+        // Save file'ları yeniden sırala
+        this._sortedSavefileIds = this.getSortedSaveFiles();
 
-        // Slot'ları yeniden oluştur (timestamp sıralaması ile)
-        this.createSlots();
+        for (let i = 0; i < Config.Layout.MaxSlots; i++) {
+            const savefileId = this._sortedSavefileIds[i] || (i + 1);
+            const info = DataManager.loadSavefileInfo(savefileId);
+            const mapId = (info && info.mapId) ? info.mapId : 0;
+            const exists = !!info;
+
+            if (this._slots[i]) {
+                // Reuse existing slot
+                this._slots[i].setData(savefileId, mapId, exists);
+            } else {
+                // Create new slot if needed
+                const slot = new SaveSlot(i, savefileId, mapId, exists);
+                this.addChild(slot);
+                this._slots.push(slot);
+            }
+        }
+
         this.refreshSlots();
     };
 
@@ -793,55 +827,6 @@
     };
 
     // --- Visual Feedback Methods ---
-
-    Scene_CustomSaveLoad.prototype.showSavingIndicator = function () {
-        this.hideMessage(); // Önceki mesajı temizle
-
-        this._messageSprite = new Sprite();
-        this._messageSprite.bitmap = new Bitmap(400, 100);
-        this._messageSprite.x = (Graphics.boxWidth - 400) / 2;
-        this._messageSprite.y = (Graphics.boxHeight - 100) / 2;
-        this._messageSprite.opacity = 0;
-
-        const bmp = this._messageSprite.bitmap;
-        bmp.fontFace = "GameFont";
-        bmp.fontSize = 32;
-        bmp.textColor = "#FFFFFF";
-        bmp.outlineColor = "rgba(0, 0, 0, 0.8)";
-        bmp.outlineWidth = 6;
-        bmp.drawText("Saving...", 0, 0, 400, 100, 'center');
-
-        this.addChild(this._messageSprite);
-
-        // Fade-in animasyonu
-        this.fadeInMessage();
-    };
-
-    Scene_CustomSaveLoad.prototype.showSaveSuccessMessage = function () {
-        this.hideMessage(); // Önceki mesajı temizle
-
-        this._messageSprite = new Sprite();
-        this._messageSprite.bitmap = new Bitmap(400, 100);
-        this._messageSprite.x = (Graphics.boxWidth - 400) / 2;
-        this._messageSprite.y = (Graphics.boxHeight - 100) / 2;
-        this._messageSprite.opacity = 0;
-
-        const bmp = this._messageSprite.bitmap;
-        bmp.fontFace = "GameFont";
-        bmp.fontSize = 36;
-        bmp.textColor = "#00FF00";
-        bmp.outlineColor = "rgba(0, 0, 0, 0.8)";
-        bmp.outlineWidth = 6;
-        bmp.drawText("Game Saved!", 0, 0, 400, 100, 'center');
-
-        this.addChild(this._messageSprite);
-
-        // Fade-in animasyonu
-        this.fadeInMessage();
-
-        // 1.5 saniye sonra kaybol
-        this._messageTimer = 90; // 60 FPS * 1.5 saniye
-    };
 
     Scene_CustomSaveLoad.prototype.showErrorMessage = function (message) {
         this.hideMessage(); // Önceki mesajı temizle
@@ -877,17 +862,17 @@
         this._messageTimer = 150; // 60 FPS * 2.5 saniye
     };
 
-    Scene_CustomSaveLoad.prototype.fadeInMessage = function () {
+    Scene_CustomSaveLoad.prototype.updateMessageFadeIn = function () {
         if (!this._messageSprite) return;
 
         const fadeSpeed = 15;
-        const fadeIn = setInterval(() => {
-            if (!this._messageSprite || this._messageSprite.opacity >= 255) {
-                clearInterval(fadeIn);
-                return;
-            }
+        if (this._messageSprite.opacity < 255) {
             this._messageSprite.opacity = Math.min(255, this._messageSprite.opacity + fadeSpeed);
-        }, 16); // ~60 FPS
+        }
+    };
+
+    Scene_CustomSaveLoad.prototype.fadeInMessage = function () {
+        // Triggered when message is shown, logic is handled in update
     };
 
     Scene_CustomSaveLoad.prototype.hideMessage = function () {
@@ -906,11 +891,6 @@
     // Scene kaldırıldığında tüm kaynakları temizle
     Scene_CustomSaveLoad.prototype.terminate = function () {
         Scene_MenuBase.prototype.terminate.call(this);
-
-        if (this._saveSuccessTimer) {
-            clearTimeout(this._saveSuccessTimer);
-            this._saveSuccessTimer = null;
-        }
 
         // Slot'ları temizle
         if (this._slots) {
@@ -958,11 +938,11 @@
         this.updateRoomImage(this._mapId, this._exists);
         this.addChild(this._roomSprite);
 
-        this._frame = new Sprite(ImageManager.loadPicture(Images.saveLoadLine));
+        this._frame = new Sprite(ImageManager.loadPicture(Config.Images.SaveLoadLine));
         this.addChild(this._frame);
 
-        this.x = SLOT_X;
-        this.y = SLOT_Y_START + slotIndex * SLOT_SPACING;
+        this.x = Config.Layout.SlotX;
+        this.y = Config.Layout.SlotYStart + slotIndex * Config.Layout.SlotSpacing;
 
         this._frame.bitmap.addLoadListener(this.updateHitbox.bind(this));
 
@@ -970,6 +950,21 @@
         this._infoText.x = this._paddingX + 150;
         this._infoText.y = this._paddingY + 70;
         this.addChild(this._infoText);
+        this.refreshInfo();
+    };
+
+    /**
+     * Updates the slot data without recreating the object.
+     * @param {number} savefileId
+     * @param {number} mapId
+     * @param {boolean} exists
+     */
+    SaveSlot.prototype.setData = function (savefileId, mapId, exists) {
+        this._savefileId = savefileId;
+        this._mapId = mapId;
+        this._exists = exists;
+
+        this.updateRoomImage(this._mapId, this._exists);
         this.refreshInfo();
     };
 
@@ -985,14 +980,17 @@
         }
 
         this._roomSprite.visible = true;
-        const roomImg = Images.saveLoadRooms[mapId] || Images.saveLoadBase;
+        const roomImg = Config.Images.SaveLoadRooms[mapId] || Config.Images.SaveLoadBase;
 
         // Eğer roomImg UI base ile aynıysa, UI'da zaten gösterildiği için slot'ta tekrar göstermeyelim
-        if (roomImg === Images.saveLoadBase) {
+        if (roomImg === Config.Images.SaveLoadBase) {
             this._roomSprite.visible = false;
             this._roomSprite.bitmap = null;
             return;
         }
+
+        // Fix: Görsel yüklenene kadar sprite'ı gizle (Glitch önleme)
+        this._roomSprite.visible = false;
 
         this._roomSprite.bitmap = ImageManager.loadPicture(roomImg);
         this._roomSprite.bitmap.addLoadListener(this.onRoomImageLoad.bind(this));
@@ -1060,6 +1058,9 @@
         this._roomSprite.scale.y = scale;
         this._roomSprite.x = this._paddingX + (targetWidth - (bitmapWidth * scale)) / 2;
         this._roomSprite.y = this._paddingY + (targetHeight - (bitmapHeight * scale)) / 2;
+
+        // Fix: Yükleme ve hesaplama tamamlanınca göster
+        this._roomSprite.visible = true;
     };
 
     SaveSlot.prototype.updateHitbox = function () {
