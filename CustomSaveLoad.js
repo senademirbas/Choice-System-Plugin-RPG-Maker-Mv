@@ -42,9 +42,9 @@
             SlotX: 330,
             SlotYStart: 30,
             PauseButtonX: 100,
-            PauseButtonNormalSpacing: 110,
+            PauseButtonNormalSpacing: 90,
             PauseButtonLargeSpacing: 180,
-            PauseYOffset: 50
+            PauseYOffset: 10
         },
         Images: {
             PauseBase: 'Pause Screen/Base',
@@ -136,6 +136,17 @@
     Scene_LockedSave.prototype = Object.create(Scene_MenuBase.prototype);
     Scene_LockedSave.prototype.constructor = Scene_LockedSave;
 
+    /**
+     * @class
+     * @extends Scene_MenuBase
+     * @classdesc A scene displayed when the save feature is locked.
+     */
+    function Scene_LockedSave() {
+        this.initialize.apply(this, arguments);
+    }
+    Scene_LockedSave.prototype = Object.create(Scene_MenuBase.prototype);
+    Scene_LockedSave.prototype.constructor = Scene_LockedSave;
+
 
     // --- Scene_PauseMenu ---
 
@@ -162,6 +173,7 @@
             { img: 'Save', handler: this.commandSave },
             { img: 'Load', handler: this.commandLoad },
             { img: 'Album', handler: this.commandAlbum },
+            { img: 'Options', handler: this.commandOptions },
             { img: 'Exit', handler: this.commandExit }
         ];
 
@@ -177,12 +189,15 @@
             this.addChild(button);
 
             currentY += (info.handler === this.commandAlbum ?
-                Config.Layout.PauseButtonLargeSpacing + 25 : Config.Layout.PauseButtonNormalSpacing);
+                Config.Layout.PauseButtonLargeSpacing : Config.Layout.PauseButtonNormalSpacing);
         });
     };
 
     Scene_PauseMenu.prototype.calculateTotalButtonHeight = function () {
-        return (Config.Layout.PauseButtonNormalSpacing * 2) + Config.Layout.PauseButtonLargeSpacing;
+        // Toplam 5 buton var (4 aralık):
+        // 3 tane Normal Spacing (Save->Load, Load->Album, Options->Exit)
+        // 1 tane Large Spacing (Album->Options)
+        return (Config.Layout.PauseButtonNormalSpacing * 3) + Config.Layout.PauseButtonLargeSpacing;
     };
 
     Scene_PauseMenu.prototype.update = function () {
@@ -282,6 +297,11 @@
         SoundManager.playOk();
         SceneManager.goto(Scene_CustomSaveLoad);
         SceneManager.prepareNextScene('load');
+    };
+
+    Scene_PauseMenu.prototype.commandOptions = function () {
+        SoundManager.playOk();
+        SceneManager.push(Scene_LydiaOptions);
     };
 
     Scene_PauseMenu.prototype.commandExit = function () {
