@@ -289,13 +289,13 @@
         }
 
         SoundManager.playOk();
-        SceneManager.goto(Scene_CustomSaveLoad);
+        SceneManager.push(Scene_CustomSaveLoad);
         SceneManager.prepareNextScene('save');
     };
 
     Scene_PauseMenu.prototype.commandLoad = function () {
         SoundManager.playOk();
-        SceneManager.goto(Scene_CustomSaveLoad);
+        SceneManager.push(Scene_CustomSaveLoad);
         SceneManager.prepareNextScene('load');
     };
 
@@ -581,12 +581,13 @@
     };
 
     Scene_CustomSaveLoad.prototype.createBackground = function () {
-        // Override Scene_MenuBase's createBackground to prevent duplicate backgrounds
-        // We create our own custom UI background instead
+        // Default Scene_MenuBase behavior (snapshot) is desired.
+        Scene_MenuBase.prototype.createBackground.call(this);
     };
 
     Scene_CustomSaveLoad.prototype.create = function () {
         // Scene initialization
+        Scene_MenuBase.prototype.create.call(this);
         this._index = 0;
 
         // Mode kontrolü
@@ -614,12 +615,13 @@
 
         // Create UI base background
         this._uiBackgroundSprite = new Sprite(ImageManager.loadPicture(Config.Images.SaveLoadBase));
-        this._uiBackgroundSprite.x = 50;
-        this._uiBackgroundSprite.y = 0;
-
-        // Add dimmer first (covers whole screen), then UI base on top
+        // Dimmer'ı sahneye ekle (karartma efekti için)
         this.addChild(this._dimmerSprite);
+
+        // UI Base görselini ekle (Görünür yap)
         this.addChild(this._uiBackgroundSprite);
+        this._uiBackgroundSprite.visible = true;
+        this._uiBackgroundSprite.opacity = 200; // Hafif saydamlık ekle ki arkası görünsün
     };
 
     Scene_CustomSaveLoad.prototype.createSlots = function () {
@@ -952,19 +954,21 @@
         this._exists = exists;
         this._paddingX = 35;
         this._paddingY = 35;
+        // Initialize frame first to ensure dimensions are available
+        this._frame = new Sprite(ImageManager.loadPicture(Config.Images.SaveLoadLine));
+        this._frame.bitmap.addLoadListener(this.updateHitbox.bind(this));
+
         this._roomSprite = new Sprite();
         this._roomSprite.x = this._paddingX;
         this._roomSprite.y = this._paddingY;
-        this.updateRoomImage(this._mapId, this._exists);
-        this.addChild(this._roomSprite);
 
-        this._frame = new Sprite(ImageManager.loadPicture(Config.Images.SaveLoadLine));
+        this.addChild(this._roomSprite);
         this.addChild(this._frame);
+
+        this.updateRoomImage(this._mapId, this._exists);
 
         this.x = Config.Layout.SlotX;
         this.y = Config.Layout.SlotYStart + slotIndex * Config.Layout.SlotSpacing;
-
-        this._frame.bitmap.addLoadListener(this.updateHitbox.bind(this));
 
         this._infoText = new Sprite(new Bitmap(300, 80));
         this._infoText.x = this._paddingX + 150;
@@ -1000,7 +1004,10 @@
         }
 
         this._roomSprite.visible = true;
-        const roomImg = Config.Images.SaveLoadRooms[mapId] || Config.Images.SaveLoadBase;
+
+        // Şimdilik test için fallback olarak ID 4'ü (Lydia's Room) kullanalım.
+        // Böylece listede olmayan bir haritada save alınsa bile bir görsel görünür.
+        const roomImg = Config.Images.SaveLoadRooms[mapId] || Config.Images.SaveLoadRooms[4];
 
         // Eğer roomImg UI base ile aynıysa, UI'da zaten gösterildiği için slot'ta tekrar göstermeyelim
         if (roomImg === Config.Images.SaveLoadBase) {
@@ -1009,11 +1016,17 @@
             return;
         }
 
-        // Fix: Görsel yüklenene kadar sprite'ı gizle (Glitch önleme)
-        this._roomSprite.visible = false;
+        // Fix: Görsel yüklenene kadar sprite'ı gizle (Glitch önleme) - İPTAL: Flickering yapıyor.
+        // this._roomSprite.visible = false;
 
         this._roomSprite.bitmap = ImageManager.loadPicture(roomImg);
         this._roomSprite.bitmap.addLoadListener(this.onRoomImageLoad.bind(this));
+
+        // Eğer bitmap zaten bellekte hazırsa, listener tetiklenmeyebilir veya senkron çalışır.
+        // Garanti olsun diye manuel kontrol edelim.
+        if (this._roomSprite.bitmap.isReady()) {
+            this.onRoomImageLoad();
+        }
     };
 
     SaveSlot.prototype.refreshInfo = function () {
@@ -1062,24 +1075,44 @@
     };
 
     SaveSlot.prototype.onRoomImageLoad = function () {
-        if (!this._frame || !this._frame.bitmap || !this._roomSprite || !this._roomSprite.bitmap ||
-            !this._frame.bitmap.isReady()) return;
+        // Frame henüz yüklenmediyse, onun yüklenmesini bekle
+        if (this._frame && this._frame.bitmap && !this._frame.bitmap.isReady()) {
+            this._roomSprite.visible = false; // Frame hazır değilse gizle
+            this._frame.bitmap.addLoadListener(this.onRoomImageLoad.bind(this));
+            return;
+        }
+
+        // Room bitmap hazır değilse gizle ve bekle (Listener updateRoomImage'de eklendi)
+        if (this._roomSprite && this._roomSprite.bitmap && !this._roomSprite.bitmap.isReady()) {
+            this._roomSprite.visible = false;
+            return;
+        }
+
+        if (!this._frame || !this._frame.bitmap || !this._roomSprite || !this._roomSprite.bitmap) return;
 
         const bitmapWidth = this._roomSprite.bitmap.width;
         const bitmapHeight = this._roomSprite.bitmap.height;
 
         if (bitmapWidth === 0 || bitmapHeight === 0) return;
 
+
+        // Calculate scale to fit within the frame with padding
         const targetWidth = this._frame.width - (this._paddingX * 2);
-        const targetHeight = this._frame.height - (this._paddingY * 2) - 10;
-        const scale = Math.min(targetWidth / bitmapWidth, targetHeight / bitmapHeight);
+        const targetHeight = this._frame.height - (this._paddingY * 2);
+
+        // Calculate scale (preserve aspect ratio)
+        let scale = Math.min(targetWidth / bitmapWidth, targetHeight / bitmapHeight);
+
+        // Reduce scale further to prevent overflow and make it look smaller / neater
+        scale *= 0.85;
 
         this._roomSprite.scale.x = scale;
         this._roomSprite.scale.y = scale;
-        this._roomSprite.x = this._paddingX + (targetWidth - (bitmapWidth * scale)) / 2;
-        this._roomSprite.y = this._paddingY + (targetHeight - (bitmapHeight * scale)) / 2;
 
-        // Fix: Yükleme ve hesaplama tamamlanınca göster
+        // Position: Left aligned (as requested) + Vertically centered in frame
+        this._roomSprite.x = 35;
+        this._roomSprite.y = (this._frame.height - (bitmapHeight * scale)) / 2 - 9;
+
         this._roomSprite.visible = true;
     };
 
