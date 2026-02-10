@@ -1,47 +1,111 @@
 /*:
- * @plugindesc VN Seçim Sistemi - Final Platinum Version (Keyboard Only - Fixed)
+ * @plugindesc Visual Novel Choice System (Final Platinum) - Keyboard Only
  * @author SeninAdin
+ *
+ * @param --- General Settings ---
+ * @default
+ *
+ * @param Result Variable ID
+ * @desc Variable ID to store the selected choice index (1, 2, or 3).
+ * @default 1
+ * @type variable
+ *
+ * @param --- Choice 1 (Top/Middle) ---
+ * @default
+ *
+ * @param Choice 1 X
+ * @desc X coordinate for the first choice bar.
+ * @default 770
+ *
+ * @param Choice 1 Y
+ * @desc Y coordinate for the first choice bar.
+ * @default 371
+ *
+ * @param --- Choice 2 (Middle/Bottom) ---
+ * @default
+ *
+ * @param Choice 2 X
+ * @desc X coordinate for the second choice bar.
+ * @default 770
+ *
+ * @param Choice 2 Y
+ * @desc Y coordinate for the second choice bar.
+ * @default 425
+ *
+ * @param --- Choice 3 (Bottom) ---
+ * @default
+ *
+ * @param Choice 3 X
+ * @desc X coordinate for the third choice bar.
+ * @default 770
+ *
+ * @param Choice 3 Y
+ * @desc Y coordinate for the third choice bar.
+ * @default 479
+ *
  * @help
  * ============================================================================
- * KULLANIM:
+ * VN CHOICE SYSTEM
  * ============================================================================
- * Plugin Command: ShowVNChoices choice1|choice2|choice3
- * * ÖRNEK 1 (3 Seçenekli):
- * ShowVNChoices 1.|2.|3.
- * -> "1." seçilirse Variable #1 = 1 olur. (Görsel: En Üst)
- * -> "2." seçilirse Variable #1 = 2 olur. (Görsel: Orta)
- * -> "3." seçilirse Variable #1 = 3 olur. (Görsel: En Alt)
+ * This plugin creates a Visual Novel style choice selection system using
+ * custom images and layout.
  *
- * ÖRNEK 2 (2 Seçenekli):
- * ShowVNChoices Evet|Hayır
- * -> "Evet" seçilirse Variable #1 = 1 olur. (Görsel: Orta)
- * -> "Hayır" seçilirse Variable #1 = 2 olur. (Görsel: En Alt)
+ * USAGE:
+ * Plugin Command: ShowVNChoices choice1|choice2|choice3
+ * 
+ * EXAMPLE 1 (3 Choices):
+ * ShowVNChoices Option A|Option B|Option C
+ * -> Option A selected: Variable = 1
+ * -> Option B selected: Variable = 2
+ * -> Option C selected: Variable = 3
+ *
+ * EXAMPLE 2 (2 Choices):
+ * ShowVNChoices Yes|No
+ * -> Yes selected: Variable = 1
+ * -> No selected: Variable = 2
  */
 
 (function () {
     'use strict';
 
     // ============================= 
-    // AYARLAR
+    // CONFIGURATION
     // ============================= 
+    var params = PluginManager.parameters('VN_Choice_System');
+
     const VN_CHOICE_CONFIG = {
         CHOICE_AREAS: [
-            // [0] -> EN ÜST BAR (Bar 3) - Y: 371
-            { x: 770, y: 371, width: 850, height: 35 },
+            // [0] -> TOP BAR (Bar 3)
+            {
+                x: Number(params['Choice 1 X'] || 770),
+                y: Number(params['Choice 1 Y'] || 371),
+                width: 850,
+                height: 35
+            },
 
-            // [1] -> ORTA BAR (Bar 1) - Y: 425
-            { x: 770, y: 425, width: 850, height: 35 },
+            // [1] -> MIDDLE BAR (Bar 1)
+            {
+                x: Number(params['Choice 2 X'] || 770),
+                y: Number(params['Choice 2 Y'] || 425),
+                width: 850,
+                height: 35
+            },
 
-            // [2] -> ALT BAR (Bar 2) - Y: 479
-            { x: 770, y: 479, width: 850, height: 40 }
+            // [2] -> BOTTOM BAR (Bar 2)
+            {
+                x: Number(params['Choice 3 X'] || 770),
+                y: Number(params['Choice 3 Y'] || 479),
+                width: 850,
+                height: 40
+            }
         ],
 
         PICTURES: {
-            BAR_1: 'Selection Bar',        // Orta
+            BAR_1: 'Selection Bar',        // Middle
             BAR_1_ON: 'Selection Bar On',
-            BAR_2: 'Selection Bar 2',      // Alt
+            BAR_2: 'Selection Bar 2',      // Bottom
             BAR_2_ON: 'Selection Bar 2 On',
-            BAR_3: 'Selection Bar 3',      // Üst
+            BAR_3: 'Selection Bar 3',      // Top
             BAR_3_ON: 'Selection Bar 3 On'
         },
 
@@ -55,7 +119,7 @@
             LINE_HEIGHT: 30
         },
 
-        RESULT_VARIABLE_ID: 1
+        RESULT_VARIABLE_ID: Number(params['Result Variable ID'] || 1)
     };
 
     let vnChoiceTexts = [];

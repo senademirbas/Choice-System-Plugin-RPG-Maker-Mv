@@ -1,27 +1,59 @@
 /*:
- * @plugindesc Özel Menü Sistemi (Pause + Save/Load + Album) - v19.4 (Event State Fix)
+ * @plugindesc Custom Save/Load & Pause Menu System (v19.4)
  * @author Sena
- * @help 
- * v19.4 Değişiklikleri:
- * - FIX: Load yapıldığında eventlerin sıfırlanması sorunu çözüldü (oyuna tam olarak kalındığı yerden devam ediliyor)
+ *
+ * @param --- Layout Settings ---
+ * @default
+ *
+ * @param Max Slots
+ * @desc Maximum number of save slots to display.
+ * @default 3
+ * @type number
+ *
+ * @param Slot X
+ * @desc X coordinate for the save slots.
+ * @default 330
+ * @type number
+ *
+ * @param Slot Y Start
+ * @desc Y coordinate for the first save slot.
+ * @default 40
+ * @type number
+ *
+ * @param Slot Spacing
+ * @desc Vertical spacing between save slots.
+ * @default 210
+ * @type number
+ *
+ * @param --- Trigger Switches ---
+ * @default
+ *
+ * @param Save Unlock Switch
+ * @desc Switch ID that enables saving.
+ * @default 48
+ * @type switch
+ *
+ * @param Album Unlock Switch
+ * @desc Switch ID that enables the album.
+ * @default 50
+ * @type switch
  * 
- * v19.3 Değişiklikleri:
- * - CRITICAL FIX: Load menüsünün Save olarak çalışması sorunu düzeltildi (Mode overwrite bug)
- * 
- * v19.2 Değişiklikleri:
- * - CRITICAL FIX: Load sonrası siyah ekran sorunu çözüldü (Scene_Map override eklendi)
- * - FIX: Map versiyon değişikliği kontrolü eklendi (reloadMapIfUpdated)
- * 
- * v19.1 Değişiklikleri:
- * - CRITICAL FIX: Load işlemi düzeltildi - artık kayıtlı oyuna kaldığınız yerden devam edebilirsiniz
- * - Custom fade transition kaldırıldı (RPG Maker MV'nin built-in transition'ı kullanılıyor)
- * 
- * v19 Değişiklikleri:
- * - FEATURE: Save file'lar timestamp'e göre sıralanıyor (en son save en üstte)
- * - FEATURE: Save file'lar timestamp'e göre sıralanıyor (en son save en üstte)
- * - FEATURE: Hata yönetimi ve corrupted save file kontrolü
- * - FEATURE: Detaylı error message gösterme sistemi
- * - OPTIMIZATION: Try-catch blokları ile güvenli işlem yapma
+ * @help
+ * ============================================================================
+ * CUSTOM SAVE/LOAD & PAUSE MENU SYSTEM
+ * ============================================================================
+ * This plugin implements a custom Pause Menu, Save/Load screen, and 
+ * Photo Album system.
+ *
+ * FEATURES:
+ * - Custom visual save slots with room preview images.
+ * - Timestamp-based sorting (newest save on top).
+ * - "Locked" states for Save and Album menus.
+ * - Integrated Photo Album viewer.
+ *
+ * SETUP:
+ * Use the Plugin Manager parameters to configure layout and switches.
+ * Save/Load room images must be configured in the code's Config object.
  */
 
 (function () {
@@ -31,16 +63,18 @@
      * @constant
      * @description Configuration and Asset definitions for the Custom Menu System.
      */
+    var params = PluginManager.parameters('CustomSaveLoad');
+
     const Config = {
         Switches: {
-            SaveUnlock: 48,
-            AlbumUnlock: 50 // Default for test, can be overridden by AlbumConfig
+            SaveUnlock: Number(params['Save Unlock Switch'] || 48),
+            AlbumUnlock: Number(params['Album Unlock Switch'] || 50)
         },
         Layout: {
-            MaxSlots: 3,
-            SlotSpacing: 200,
-            SlotX: 330,
-            SlotYStart: 30,
+            MaxSlots: Number(params['Max Slots'] || 3),
+            SlotSpacing: Number(params['Slot Spacing'] || 200),
+            SlotX: Number(params['Slot X'] || 330),
+            SlotYStart: Number(params['Slot Y Start'] || 30),
             PauseButtonX: 100,
             PauseButtonNormalSpacing: 90,
             PauseButtonLargeSpacing: 180,
