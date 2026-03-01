@@ -1,111 +1,51 @@
 /*:
- * @plugindesc Visual Novel Choice System (Final Platinum) - Keyboard Only
+ * @plugindesc VN Seçim Sistemi - Final Platinum Version (Keyboard Only - Fixed)
  * @author SeninAdin
- *
- * @param --- General Settings ---
- * @default
- *
- * @param Result Variable ID
- * @desc Variable ID to store the selected choice index (1, 2, or 3).
- * @default 1
- * @type variable
- *
- * @param --- Choice 1 (Top/Middle) ---
- * @default
- *
- * @param Choice 1 X
- * @desc X coordinate for the first choice bar.
- * @default 770
- *
- * @param Choice 1 Y
- * @desc Y coordinate for the first choice bar.
- * @default 371
- *
- * @param --- Choice 2 (Middle/Bottom) ---
- * @default
- *
- * @param Choice 2 X
- * @desc X coordinate for the second choice bar.
- * @default 770
- *
- * @param Choice 2 Y
- * @desc Y coordinate for the second choice bar.
- * @default 425
- *
- * @param --- Choice 3 (Bottom) ---
- * @default
- *
- * @param Choice 3 X
- * @desc X coordinate for the third choice bar.
- * @default 770
- *
- * @param Choice 3 Y
- * @desc Y coordinate for the third choice bar.
- * @default 479
- *
  * @help
  * ============================================================================
- * VN CHOICE SYSTEM
+ * KULLANIM:
  * ============================================================================
- * This plugin creates a Visual Novel style choice selection system using
- * custom images and layout.
- *
- * USAGE:
  * Plugin Command: ShowVNChoices choice1|choice2|choice3
- * 
- * EXAMPLE 1 (3 Choices):
- * ShowVNChoices Option A|Option B|Option C
- * -> Option A selected: Variable = 1
- * -> Option B selected: Variable = 2
- * -> Option C selected: Variable = 3
+ * * ÖRNEK 1 (3 Seçenekli):
+ * ShowVNChoices 1.|2.|3.
+ * -> "1." seçilirse Variable #1 = 1 olur. (Görsel: En Üst)
+ * -> "2." seçilirse Variable #1 = 2 olur. (Görsel: Orta)
+ * -> "3." seçilirse Variable #1 = 3 olur. (Görsel: En Alt)
  *
- * EXAMPLE 2 (2 Choices):
- * ShowVNChoices Yes|No
- * -> Yes selected: Variable = 1
- * -> No selected: Variable = 2
+ * ÖRNEK 2 (2 Seçenekli):
+ * ShowVNChoices Evet|Hayır
+ * -> "Evet" seçilirse Variable #1 = 1 olur. (Görsel: Orta)
+ * -> "Hayır" seçilirse Variable #1 = 2 olur. (Görsel: En Alt)
+ *
+ * ÖRNEK 3 (1 Seçenekli):
+ * ShowVNChoices Devam Et
+ * -> "Devam Et" seçilirse Variable #1 = 1 olur. (Görsel: Orta)
  */
 
 (function () {
     'use strict';
 
     // ============================= 
-    // CONFIGURATION
+    // AYARLAR
     // ============================= 
-    var params = PluginManager.parameters('VN_Choice_System');
-
     const VN_CHOICE_CONFIG = {
         CHOICE_AREAS: [
-            // [0] -> TOP BAR (Bar 3)
-            {
-                x: Number(params['Choice 1 X'] || 770),
-                y: Number(params['Choice 1 Y'] || 371),
-                width: 850,
-                height: 35
-            },
+            // [0] -> EN ÜST BAR (Bar 3) - Y: 371
+            { x: 770, y: 371, width: 850, height: 35 },
 
-            // [1] -> MIDDLE BAR (Bar 1)
-            {
-                x: Number(params['Choice 2 X'] || 770),
-                y: Number(params['Choice 2 Y'] || 425),
-                width: 850,
-                height: 35
-            },
+            // [1] -> ORTA BAR (Bar 1) - Y: 425
+            { x: 770, y: 425, width: 850, height: 35 },
 
-            // [2] -> BOTTOM BAR (Bar 2)
-            {
-                x: Number(params['Choice 3 X'] || 770),
-                y: Number(params['Choice 3 Y'] || 479),
-                width: 850,
-                height: 40
-            }
+            // [2] -> ALT BAR (Bar 2) - Y: 479
+            { x: 770, y: 479, width: 850, height: 40 }
         ],
 
         PICTURES: {
-            BAR_1: 'Selection Bar',        // Middle
+            BAR_1: 'Selection Bar',        // Orta
             BAR_1_ON: 'Selection Bar On',
-            BAR_2: 'Selection Bar 2',      // Bottom
+            BAR_2: 'Selection Bar 2',      // Alt
             BAR_2_ON: 'Selection Bar 2 On',
-            BAR_3: 'Selection Bar 3',      // Top
+            BAR_3: 'Selection Bar 3',      // Üst
             BAR_3_ON: 'Selection Bar 3 On'
         },
 
@@ -119,7 +59,7 @@
             LINE_HEIGHT: 30
         },
 
-        RESULT_VARIABLE_ID: Number(params['Result Variable ID'] || 1)
+        RESULT_VARIABLE_ID: 1
     };
 
     let vnChoiceTexts = [];
@@ -135,7 +75,7 @@
             const choiceText = args.join(' ');
             const choices = choiceText.split('|');
 
-            if (choices.length >= 2) {
+            if (choices.length >= 1) {
                 vnChoiceTexts = choices.map(c => c.trim());
 
                 if (SceneManager._scene instanceof Scene_Map) {
@@ -239,7 +179,7 @@
         this._vnBarSprite1.bitmap = bitmap1;
         this._vnBarSprite1._normalBitmap = bitmap1;
         this._vnBarSprite1._hoverBitmap = bitmap1On;
-        this._vnBarSprite1.visible = true;
+        this._vnBarSprite1.visible = true; // Değişiklik: Tek seçenekte hep aktif kalacak olan görsel bu (Bar 2 / Alt Bar)
 
         // --- BAR 2 (Alt) ---
         const bitmap2 = ImageManager.loadPicture(cfg.PICTURES.BAR_2);
@@ -247,7 +187,7 @@
         this._vnBarSprite2.bitmap = bitmap2;
         this._vnBarSprite2._normalBitmap = bitmap2;
         this._vnBarSprite2._hoverBitmap = bitmap2On;
-        this._vnBarSprite2.visible = true;
+        this._vnBarSprite2.visible = (count >= 2); // Değişiklik: Tek seçenekte gizlenecek olan görsel bu (Bar 1 / Orta Bar)
 
         // --- BAR 3 (Üst) ---
         const bitmap3 = ImageManager.loadPicture(cfg.PICTURES.BAR_3);
@@ -334,11 +274,14 @@
         let areaIndex = 0;
 
         if (this.maxItems() === 3) {
-            // 3 Seçenek: 
+            // 3 Seçenek: [0](Üst), [1](Orta), [2](Alt)
             areaIndex = index;
-        } else {
-            // 2 Seçenek:
+        } else if (this.maxItems() === 2) {
+            // 2 Seçenek: [1](Orta), [2](Alt)
             areaIndex = index + 1;
+        } else {
+            // 1 Seçenek: [2](Alt)
+            areaIndex = 2;
         }
 
         const area = VN_CHOICE_CONFIG.CHOICE_AREAS[areaIndex];
@@ -392,21 +335,24 @@
     Window_VNChoice.prototype.updateBarGraphics = function (hoverIndex) {
         if (!this._barSprite1 || !this._barSprite2 || !this._barSprite3) return;
 
-        const isThree = (this.maxItems() === 3);
+        const count = this.maxItems();
         let activeSpriteForIndex = null;
 
-        if (isThree) {
+        if (count === 3) {
             // 3 Seçenekliyken sıralama (DOKUNULMADI):
             if (hoverIndex === 0) activeSpriteForIndex = this._barSprite3;
             if (hoverIndex === 2) activeSpriteForIndex = this._barSprite1;
             if (hoverIndex === 1) activeSpriteForIndex = this._barSprite2;
-        } else {
+        } else if (count === 2) {
             // 2 Seçenekliyken sıralama (TAM TERSİ YAPILDI):
             // Eskisi: 0 -> Sprite1, 1 -> Sprite2 idi.
             // Yenisi: 0 -> Sprite2, 1 -> Sprite1 oldu.
 
             if (hoverIndex === 0) activeSpriteForIndex = this._barSprite2;
             if (hoverIndex === 1) activeSpriteForIndex = this._barSprite1;
+        } else {
+            // 1 Seçenekliyken (En Alt Bar - Sprite1)
+            if (hoverIndex === 0) activeSpriteForIndex = this._barSprite1;
         }
 
         // Önce hepsini söndür (Normal resim)

@@ -1,71 +1,55 @@
 /*:
- * @plugindesc Main Menu System (v7.1 Final) - Custom Layout & Clean Audio
+ * @plugindesc [v7.1 Final] Lydia Was Here - 0 Ses Limiti ve Görsel Temizlik
  * @author Studio Rainy Day
  *
- * @param --- Logo Settings ---
+ * @param --- LOGO AYARLARI ---
  * @default
  *
  * @param Title X
- * @desc X coordinate of the game logo.
+ * @desc Oyun Logosunun X Konumu
  * @default 550
  *
  * @param Title Y
- * @desc Y coordinate of the game logo.
+ * @desc Oyun Logosunun Y Konumu
  * @default 130
  *
- * @param --- Button Settings ---
+ * @param --- BUTON AYARLARI ---
  * @default
  *
  * @param Start X
- * @desc X coordinate for the Start button.
  * @default 1010
- *
  * @param Start Y
- * @desc Y coordinate for the Start button.
  * @default 400
  *
  * @param Load X
- * @desc X coordinate for the Load button.
  * @default 1010
- *
  * @param Load Y
- * @desc Y coordinate for the Load button.
  * @default 470
  *
  * @param Options X
- * @desc X coordinate for the Options button.
  * @default 1010
- *
  * @param Options Y
- * @desc Y coordinate for the Options button.
  * @default 540
  *
  * @param Exit X
- * @desc X coordinate for the Exit button.
  * @default 1010
- *
  * @param Exit Y
- * @desc Y coordinate for the Exit button.
  * @default 610
  *
  * @help
  * ============================================================================
- * MAIN MENU SYSTEM (v7.1)
+ * SİSTEM GÜNCELLEMESİ (v7.1)
  * ============================================================================
- * This plugin customizes the Title Screen layout and functionality.
- *
- * FEATURES:
- * - Custom coordinates for Title Logo and Buttons.
- * - Removed default "Options" header image.
- * - Enhanced audio volume control (allows 0 volume).
- * - Persistent configuration saving.
+ * - Options menüsündeki üst başlık görseli kaldırıldı.
+ * - Ses seviyelerinin 0'a (sessiz) kadar inmesi sağlandı.
+ * - ConfigManager entegrasyonu devam ediyor.
  */
 
 (function () {
     'use strict';
 
     // ==============================================================================
-    // SECTION 0: CONFIG MANAGER (PERSISTENT DATA)
+    // BÖLÜM 0: CONFIG MANAGER (AYARLARIN KALICI OLMASI İÇİN)
     // ==============================================================================
 
     // Varsayılan değerler
@@ -121,7 +105,7 @@
     };
 
     // ==============================================================================
-    // SECTION 1: GLOBAL MOUSE DISABLE
+    // BÖLÜM 1: GLOBAL MOUSE ENGELLEME
     // ==============================================================================
 
     var _Scene_Boot_start = Scene_Boot.prototype.start;
@@ -144,7 +128,7 @@
     Object.defineProperty(TouchInput, 'wheelY', { get: function () { return 0; }, configurable: true });
 
     // ==============================================================================
-    // SECTION 2: MAIN MENU (SCENE_TITLE)
+    // BÖLÜM 2: ANA MENÜ (SCENE_TITLE)
     // ==============================================================================
 
     var p = PluginManager.parameters('MainMenu');
